@@ -1,5 +1,5 @@
 /*
-** 2017-05-12
+** 2025-11-05
 **
 ** The author disclaims copyright to this source code.  In place of
 ** a legal notice, here is a blessing:
@@ -12,6 +12,7 @@
 **
 ** This SQLite extension implements inet_aton(), and inet_ntoa(), inet6_aton(), and inet6_ntoa() functions.
 */
+
 #ifndef INET6_H
 #define INET6_H
 #include <sqlite3ext.h>
@@ -20,40 +21,13 @@
 SQLITE_EXTENSION_INIT1
 #endif
 
-/* #ifdef _WIN32
-
-#include <winsock2.h>
-
-int inet_aton(
-    const char *zIn,
-    struct in_addr *sInAddr)
-{
-    SOCKADDR_IN sock = { 0 };
-    int len = sizeof(sock);
-    int result = WSAStringToAddress(
-        (char*)zIn,
-        AF_INET,
-        NULL,
-        (LPSOCKADDR)&sock,
-        &len);
-    sInAddr -> s_addr = sock.sin_addr.S_un.S_addr;
-    return result == 0;
-}
-
-#else */
-
 #include <arpa/inet.h>
-
-/* #endif */
 
 #include <assert.h>
 #include <string.h>
 #include "inet.h"
 
-static void inet6_aton_impl(
-    sqlite3_context *context,
-    int argc,
-    sqlite3_value **argv)
+static void inet6_aton_impl(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
     const char *zIn;
     struct in6_addr ipv6;
@@ -68,13 +42,18 @@ static void inet6_aton_impl(
     }
 
     zIn = (const char*)sqlite3_value_text(argv[0]);
-    if (inet_pton(AF_INET6, zIn, &ipv6) == 1) {
+    if (inet_pton(AF_INET6, zIn, &ipv6) == 1)
+    {
         /* recognized as IPv6 */
         memcpy(ipBytes, ipv6.s6_addr, 16);
-    } else if (inet_pton(AF_INET, zIn, &ipv4)) {
+    }
+    else if (inet_pton(AF_INET, zIn, &ipv4))
+    {
         /* recognized as IPv4 */
         memcpy(ipBytes + 12, &ipv4, 4);
-    } else {
+    }
+    else
+    {
         /* assumed to be invalid IP */
         sqlite3_result_null(context);
         return;
@@ -82,10 +61,7 @@ static void inet6_aton_impl(
     sqlite3_result_blob(context, ipBytes, 16, SQLITE_TRANSIENT);
 }
 
-static void inet6_ntoa_impl(
-    sqlite3_context *context,
-    int argc,
-    sqlite3_value **argv)
+static void inet6_ntoa_impl(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
     char zOut[INET6_ADDRSTRLEN] = {0};
     const unsigned char* blob;
@@ -101,7 +77,9 @@ static void inet6_ntoa_impl(
     if (vType == SQLITE_NULL)
     {
         return;
-    } else if (vType == SQLITE_INTEGER) {
+    }
+    else if (vType == SQLITE_INTEGER)
+    {
         nIn = sqlite3_value_int(argv[0]);
         ipv4.s_addr = htonl(nIn);
         blob = (const unsigned char*)inet_ntoa(ipv4);
@@ -112,21 +90,27 @@ static void inet6_ntoa_impl(
 
     blob = sqlite3_value_blob(argv[0]);
     blobLength = sqlite3_value_bytes(argv[0]);
-    if (blobLength == 16) {
+    if (blobLength == 16)
+    {
         memcpy(&ipv6, blob, 16);
-        if (IN6_IS_ADDR_V4MAPPED(&ipv6) || IN6_IS_ADDR_V4COMPAT(&ipv6)) {
+        if (IN6_IS_ADDR_V4MAPPED(&ipv6) || IN6_IS_ADDR_V4COMPAT(&ipv6))
+        {
+            /* argument is an IPv4 number */
             memcpy(&ipv4, blob + 12, 4);
             inet_ntop(AF_INET, &ipv4, zOut, sizeof(zOut));
-        } else {
+        }
+        else
+        {
+            /* argument is an IPv6 number */
             inet_ntop(AF_INET6, &ipv6, zOut, sizeof(zOut));
         }
         sqlite3_result_text(context, zOut, -1, SQLITE_TRANSIENT);
-    } else {
+    }
+    else
+    {
+        /* not a valid IP number */
         sqlite3_result_null(context);
     }
 }
 
-/* #ifdef _WIN32
-__declspec(dllexport)
-#endif */
 #endif

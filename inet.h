@@ -1,5 +1,5 @@
 /*
-** 2017-05-12
+** 2025-11-05
 **
 ** The author disclaims copyright to this source code.  In place of
 ** a legal notice, here is a blessing:
@@ -12,6 +12,7 @@
 **
 ** This SQLite extension implements inet_aton() and inet_ntoa() functions.
 */
+
 #ifndef INET_H
 #define INET_H
 #include <sqlite3ext.h>
@@ -25,11 +26,7 @@ SQLITE_EXTENSION_INIT1
 #include <assert.h>
 #include <string.h>
 
-static void inet_aton_impl(
-    sqlite3_context *context,
-    int argc,
-    sqlite3_value **argv)
-{
+static void inet_aton_impl(sqlite3_context *context, int argc, sqlite3_value **argv) {
     const char *zIn;
     struct in_addr sInAddr;
 
@@ -49,10 +46,7 @@ static void inet_aton_impl(
     sqlite3_result_int64(context, ntohl(sInAddr.s_addr));
 }
 
-static void inet_ntoa_impl(
-    sqlite3_context *context,
-    int argc,
-    sqlite3_value **argv)
+static void inet_ntoa_impl(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
     struct in_addr sInAddr;
     int nIn;
