@@ -12,34 +12,15 @@
 **
 ** This SQLite extension implements inet_aton() and inet_ntoa() functions.
 */
+#ifndef INET_H
+#define INET_H
 #include <sqlite3ext.h>
+#ifndef SQLITE_EXTENSION_INIT1_DEF
+#define SQLITE_EXTENSION_INIT1_DEF
 SQLITE_EXTENSION_INIT1
-
-#ifdef _WIN32
-
-#include <winsock2.h>
-
-int inet_aton(
-    const char *zIn,
-    struct in_addr *sInAddr)
-{
-    SOCKADDR_IN sock = { 0 };
-    int len = sizeof(sock);
-    int result = WSAStringToAddress(
-        (char*)zIn,
-        AF_INET,
-        NULL,
-        (LPSOCKADDR)&sock,
-        &len);
-    sInAddr -> s_addr = sock.sin_addr.S_un.S_addr;
-    return result == 0;
-}
-
-#else
+#endif
 
 #include <arpa/inet.h>
-
-#endif
 
 #include <assert.h>
 #include <string.h>
@@ -62,7 +43,6 @@ static void inet_aton_impl(
 
     if (inet_aton(zIn, &sInAddr) == 0)
     {
-        sqlite3_result_error(context, "Passed a malformed IP address", -1);
         return;
     }
 
@@ -92,50 +72,4 @@ static void inet_ntoa_impl(
     sqlite3_result_text(context, (char*)zOut, nOut, SQLITE_TRANSIENT);
 }
 
-#ifdef _WIN32
-__declspec(dllexport)
 #endif
-
-int sqlite3_inet_init(
-    sqlite3 *db,
-    char **pzErrMsg,
-    const sqlite3_api_routines *pApi)
-{
-    int rc = SQLITE_OK;
-
-    SQLITE_EXTENSION_INIT2(pApi);
-    (void)pzErrMsg;  /* Unused parameter */
-
-    rc = sqlite3_create_function(
-        db,
-        "inet_aton",
-        1,
-        SQLITE_UTF8,
-        0,
-        inet_aton_impl,
-        0,
-        0);
-
-    if (rc != SQLITE_OK) {
-        return rc;
-    }
-
-    rc = sqlite3_create_function(
-        db,
-        "inet_ntoa",
-        1,
-        SQLITE_UTF8,
-        0,
-        inet_ntoa_impl,
-        0,
-        0);
-
-    #ifdef _WIN32
-
-    WSADATA wsaData;
-    rc = WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-    #endif
-
-    return rc;
-}

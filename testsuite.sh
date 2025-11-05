@@ -35,9 +35,9 @@ main() {
 
     if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
 
-    testcase "inet_aton fails when fed arbitrary strings" \
-        "select inet_aton('999.999.999.999');" \
-        "Error: near line 2: Passed a malformed IP address"
+    testcase "inet_aton returns null when fed arbitrary strings" \
+        "select (inet_aton('999.999.999.999'));" \
+        ""
 
     if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
 
@@ -59,6 +59,37 @@ main() {
 
     if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
 
+    testcase "inet6_ntoa and inet_aton are inverse (IPv4)" \
+        "select inet6_ntoa(inet_aton('33.44.55.66'));" \
+        "33.44.55.66"
+
+    if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
+
+    testcase "inet6_ntoa and inet6_aton are inverse (IPv6)" \
+        "select inet6_ntoa(inet6_aton('2301::0:1'));" \
+        "2301::1"
+
+    if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
+
+    testcase "inet6_aton converts valid string address to blob" \
+        "select typeof(inet6_aton('12.34.56.78'));" \
+        "blob"
+
+    if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
+
+    testcase "inet6_ntoa converts valid numeric address to string" \
+        "select inet6_ntoa(1924046976);" \
+        "114.174.160.128"
+
+    if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
+
+    testcase "inet6_aton results can be compared" \
+        "create table ip_addrs (ip varbinary(16));insert into ip_addrs values (inet6_aton('2607:f8b0:400a:808::200e')), (inet6_aton('2607::1')), (inet6_aton('192.168.1.1'));select inet6_ntoa(ip) from ip_addrs where ip > inet6_aton('2607:f800::');" \
+        "2607:f8b0:400a:808::200e"
+
+    if [ "$?" != "0" ]; then ANY_FAILED="1"; fi
+
+
     return $ANY_FAILED
 }
 
@@ -73,14 +104,14 @@ testcase() {
 
     OUTPUT=$(
         sqlite3 2>&1 << EOF
-.load bin/inet
+.load bin/inet6
 $CODE
 EOF
     )
 
     RC="$?"
 
-    if [ "$EXPECTED" != "$OUTPUT" ]; then
+    if [[ $EXPECTED != $OUTPUT ]]; then
         printf "FAILED\n"
         printf "\tAssertion failed. Expected: '$EXPECTED', Actual: '$OUTPUT'\n"
         FAILED="1"
@@ -91,4 +122,5 @@ EOF
     return $FAILED
 }
 
+make clean && make
 main

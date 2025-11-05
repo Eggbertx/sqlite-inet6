@@ -1,19 +1,16 @@
 BIN = bin
 
 ifeq ($(OS),Windows_NT)
-TARGET = inet.dll
+TARGET = bin/inet6.dll
 OS_FLAGS = -I . -lws2_32
 else
-TARGET = inet.so
+TARGET = bin/inet6.so
 OS_FLAGS =
 endif
 
 
-$(BIN)/$(TARGET): \
-	$(BIN) \
-	inet.c
-
-	gcc -Wall -g -fPIC -shared inet.c -o $(BIN)/$(TARGET) $(OS_FLAGS)
+$(TARGET): $(BIN)
+	gcc -Wall -g -fPIC -shared init.c -o $(TARGET) $(OS_FLAGS)
 
 $(BIN):
 	mkdir $(BIN)
@@ -21,7 +18,5 @@ $(BIN):
 clean:
 	rm -rf $(BIN)/*
 
-test: \
-	$(BIN)/$(TARGET)
-
+test: $(TARGET)
 	./testsuite.sh
