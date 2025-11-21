@@ -104,6 +104,7 @@ testcase() {
 
     OUTPUT=$(
         sqlite3 2>&1 << EOF
+.mode list
 .load bin/inet6
 $CODE
 EOF
